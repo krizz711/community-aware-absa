@@ -4,8 +4,10 @@ scipy>=1.10
 scikit-learn>=1.3
 networkx>=3.1
 matplotlib>=3.7
+pyarrow>=14
 vaderSentiment>=3.3.2
 spacy>=3.7
-# optional, for the transformer ABSA comparison (GPU recommended)
-transformers>=4.40
 torch>=2.1
+# transformer ABSA check (section 3b)
+transformers>=4.40
+sentencepiece>=0.2

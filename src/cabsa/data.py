@@ -1,4 +1,4 @@
-"""Loading the Amazon Reviews 2023 data and building a leakage-safe split."""
+"""Loading the Amazon Reviews 2023 data and building a leakage-safe temporal split."""
 from __future__ import annotations
 
 import os
@@ -20,40 +20,35 @@ def download(category: str = "All_Beauty", data_dir: str = "data") -> str:
     return path
 
 
-def load_reviews(path: str, min_reviews: int = 3, min_chars: int = 20) -> pd.DataFrame:
-    """Keep users with at least `min_reviews` non-trivial reviews.
-
-    A community graph needs users who wrote more than one review; one-off
-    reviewers carry no information about who they are similar to.
-    """
+def load_raw(path: str, min_chars: int = 20) -> pd.DataFrame:
+    """Every review in the category, cleaned, one row per review."""
     df = pd.read_json(path, lines=True)
-    df = df[["user_id", "parent_asin", "rating", "title", "text", "timestamp",
-             "helpful_vote", "verified_purchase"]].copy()
+    df = df[["user_id", "parent_asin", "rating", "title", "text", "timestamp"]].copy()
     df["text"] = (df["title"].fillna("") + ". " + df["text"].fillna("")).str.strip()
     df["text"] = df["text"].str.replace(r"<br\s*/?>", " ", regex=True)
     df = df[df["text"].str.len() >= min_chars]
     df = df.drop_duplicates(["user_id", "parent_asin", "text"])
-    counts = df["user_id"].value_counts()
-    df = df[df["user_id"].isin(counts[counts >= min_reviews].index)]
-    df = df.sort_values(["user_id", "timestamp"]).reset_index(drop=True)
+    df["date"] = pd.to_datetime(df["timestamp"], unit="ms")
+    df = df.drop(columns=["title", "timestamp"]).sort_values("date").reset_index(drop=True)
     df["review_id"] = range(len(df))
     return df
 
 
-def temporal_split(df: pd.DataFrame) -> pd.DataFrame:
-    """Each user's most recent review is the test review; the rest are train.
+def time_split(df: pd.DataFrame, cutoff: str):
+    """History = everything before `cutoff`; targets = later reviews by users seen in history.
 
-    Everything downstream (aspect profiles, the graph, communities, priors) is
-    built from train rows only, so the test review never leaks into a feature.
+    Every feature, graph and community is computed from history only, so the
+    model never sees anything written on or after the cutoff.
     """
-    df = df.copy()
-    last = df.groupby("user_id")["timestamp"].transform("max")
-    rank = df.groupby("user_id").cumcount(ascending=False)
-    df["split"] = "train"
-    df.loc[(df["timestamp"] == last) & (rank == 0), "split"] = "test"
-    return df
+    hist = df[df["date"] < cutoff]
+    post = df[df["date"] >= cutoff]
+    target = post[post["user_id"].isin(set(hist["user_id"]))]
+    return hist, target
 
 
-def polarity_from_rating(r: pd.Series) -> pd.Series:
-    """1 = positive (4-5 stars), 0 = negative (1-2 stars), NaN = neutral (3)."""
-    return r.map({1: 0, 2: 0, 4: 1, 5: 1})
+def load_reviews(path: str, min_reviews: int = 3, min_chars: int = 20) -> pd.DataFrame:
+    """Users with at least `min_reviews` reviews (used by the descriptive analysis)."""
+    df = load_raw(path, min_chars)
+    counts = df["user_id"].value_counts()
+    df = df[df["user_id"].isin(counts[counts >= min_reviews].index)]
+    return df.sort_values(["user_id", "date"]).reset_index(drop=True)

@@ -75,3 +75,19 @@ def heatmap_table(m: pd.DataFrame, communities) -> pd.DataFrame:
     t = (m[m["community"].isin(communities)]
          .groupby(["community", "aspect"])["score"].mean().unstack())
     return t.sub(glob, axis=1).reindex(communities)
+
+
+def split_folds(reviews: pd.DataFrame, seed: int = 0) -> pd.Series:
+    """Alternate each user's reviews (in random order) between fold A and fold B."""
+    rng = np.random.default_rng(seed)
+    r = pd.Series(rng.random(len(reviews)), index=reviews.index)
+    k = r.groupby(reviews["user_id"]).rank(method="first")
+    return pd.Series(np.where(k % 2 == 1, "A", "B"), index=reviews.index)
+
+
+def pvalue_calibration(shift: pd.DataFrame, alpha: float = 0.05) -> dict:
+    """Share of tests significant before / after BH correction."""
+    if not len(shift):
+        return {"tests": 0, "raw_sig": np.nan, "bh_sig": np.nan}
+    return {"tests": len(shift), "raw_sig": float((shift["p"] < alpha).mean()),
+            "bh_sig": float(shift["significant"].mean())}
