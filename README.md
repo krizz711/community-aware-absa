@@ -1,7 +1,5 @@
 # Community-Aware Aspect-Based Sentiment Analysis
 
-**Team:** Munal Singh (24MID0095) · Devadharsh S (24MID0210)
-
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/krizz711/community-aware-absa/blob/main/notebooks/community_aware_absa.ipynb)
 
 Aspect-based sentiment analysis (ABSA) usually treats every reviewer as interchangeable. This project
