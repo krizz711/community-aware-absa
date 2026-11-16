@@ -56,16 +56,16 @@ Raw sentiment mostly measures the *product*: everyone praises a good serum. To c
 remove the aspect mean and the product's shrunk offset, and keep what is left, the **taste residual**:
 
 ```math
-\mu_a=\mathrm{mean},\{s_m : m \text{ on aspect } a\},\qquad
+\mu_a=\mathrm{mean}\,\{s_m : m \text{ on aspect } a\},\qquad
 b_{pa}=\frac{\sum_{m\in(p,a)}\left(s_m-\mu_a\right)}{n_{pa}+\lambda_p},\qquad \lambda_p=5
 ```
 
 ```math
-\boxed{\,e_m=\mathrm{clip},\big(s_m-\mu_a-b_{pa},\,-1,\,1\big)\,}
+\boxed{\,e_m=\mathrm{clip}\,\big(s_m-\mu_a-b_{pa},\,-1,\,1\big)\,}
 ```
 
 Each user then gets 13 numbers for **interest**, $`p_{ua}=N_{ua}/\sum_{a'}N_{ua'}`$ (share of mentions),
-and 13 for **taste**, $`s_{ua}=\mathrm{mean},(e)`$ over their mentions of $`a`$: the 12 aspects plus
+and 13 for **taste**, $`s_{ua}=\mathrm{mean}\,(e)`$ over their mentions of $`a`$: the 12 aspects plus
 an "overall" dimension built from the star-rating residual.
 
 <p align="center">
